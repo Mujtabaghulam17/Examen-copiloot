@@ -1,10 +1,11 @@
 import React from 'react';
 
-const Logo = () => {
+// FIX: Update component to accept SVG props, including `style`, to resolve type errors in parent components.
+const Logo = (props: React.SVGProps<SVGSVGElement>) => {
     // This SVG is based on the user's provided code.
     // The fill color for "EXAMEN" is set to 'var(--text-color)' to automatically adapt to light/dark themes.
     return (
-        <svg width="100%" height="100%" viewBox="0 0 500 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <svg {...props} width="100%" height="100%" viewBox="0 0 500 120" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <linearGradient id="glowGradient" x1="0%" y1="0%" x2="100%" y2="100%">
               <stop offset="0%" style={{stopColor:"#A855F7", stopOpacity:1}} />
