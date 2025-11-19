@@ -22,14 +22,14 @@ const ParentDashboard: React.FC<ParentDashboardProps> = ({
     isLoadingTip,
     studyPlan,
 }) => {
-    const scoresArray = Object.entries(masteryScores).map(([skill, score]) => ({
+    const scoresArray = Object.entries(masteryScores).map(([skill, score]: [string, MasteryScore]) => ({
         skill,
         percentage: score.total > 0 ? (score.correct / score.total) * 100 : 0,
         total: score.total,
     }));
 
-    const strengths = scoresArray.filter(s => s.percentage >= 75 && s.total >= 3).sort((a, b) => (b.percentage as number) - (a.percentage as number));
-    const weaknesses = scoresArray.filter(s => s.percentage < 55 && s.total >= 3).sort((a, b) => (a.percentage as number) - (b.percentage as number));
+    const strengths = scoresArray.filter(s => s.percentage >= 75 && s.total >= 3).sort((a, b) => b.percentage - a.percentage);
+    const weaknesses = scoresArray.filter(s => s.percentage < 55 && s.total >= 3).sort((a, b) => a.percentage - b.percentage);
 
     const totalCorrect = Object.values(masteryScores).reduce((sum: number, s: MasteryScore) => sum + s.correct, 0);
     const overallMastery = totalAnswered > 0 ? Math.round((totalCorrect / totalAnswered) * 100) : 0;

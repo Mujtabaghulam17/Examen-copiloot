@@ -1,28 +1,46 @@
 
 import { initializeApp } from 'firebase/app';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getAnalytics } from "firebase/analytics";
 
-// BELANGRIJK: Vervang onderstaande waarden met je eigen Firebase config
-// Je vindt deze in de Firebase Console -> Project Settings -> General -> Your apps
+// BELANGRIJK VOOR GITHUB:
+// De keys staan nu NIET meer hardcoded in dit bestand.
+// Dit haalt de waarden uit de omgevingsvariabelen (Environment Variables).
+//
+// 1. Lokaal: Maak een bestand genaamd '.env' in je hoofdmap en zet daar je keys in:
+//    VITE_FIREBASE_API_KEY=JouwKeyHier
+//    VITE_FIREBASE_PROJECT_ID=glowexamen
+//    ...etc
+//
+// 2. Google Cloud Run: Voeg deze variabelen toe onder 'Variables & Secrets' bij 'Edit & Deploy'.
+
 const firebaseConfig = {
-  apiKey: process.env.FIREBASE_API_KEY || "VUL_HIER_JE_API_KEY_IN",
-  authDomain: process.env.FIREBASE_AUTH_DOMAIN || "jouw-project.firebaseapp.com",
-  projectId: process.env.FIREBASE_PROJECT_ID || "jouw-project-id",
-  storageBucket: process.env.FIREBASE_STORAGE_BUCKET || "jouw-project.appspot.com",
-  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID || "123456789",
-  appId: process.env.FIREBASE_APP_ID || "1:123456789:web:abcdef123456"
+  apiKey: (import.meta as any).env.VITE_FIREBASE_API_KEY || process.env.FIREBASE_API_KEY,
+  authDomain: (import.meta as any).env.VITE_FIREBASE_AUTH_DOMAIN || process.env.FIREBASE_AUTH_DOMAIN,
+  projectId: (import.meta as any).env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
+  storageBucket: (import.meta as any).env.VITE_FIREBASE_STORAGE_BUCKET || process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: (import.meta as any).env.VITE_FIREBASE_MESSAGING_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: (import.meta as any).env.VITE_FIREBASE_APP_ID || process.env.FIREBASE_APP_ID,
+  measurementId: (import.meta as any).env.VITE_FIREBASE_MEASUREMENT_ID || process.env.FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
 let app;
 let db;
+let analytics;
 
 try {
-    app = initializeApp(firebaseConfig);
-    db = getFirestore(app);
-    console.log("Firebase initialized successfully");
+    // Check of config aanwezig is voordat we initialiseren
+    if (!firebaseConfig.apiKey) {
+        console.warn("Firebase config ontbreekt. Check je .env bestand of Cloud Run variabelen.");
+    } else {
+        app = initializeApp(firebaseConfig);
+        db = getFirestore(app);
+        analytics = getAnalytics(app);
+        console.log("Firebase initialized successfully");
+    }
 } catch (error) {
-    console.error("Firebase initialization failed. Check your config keys.", error);
+    console.error("Firebase initialization failed.", error);
 }
 
 export { db };
