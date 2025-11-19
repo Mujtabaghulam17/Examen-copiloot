@@ -4,9 +4,10 @@ interface UpgradeModalProps {
     isOpen: boolean;
     onClose: () => void;
     onUpgrade: () => void;
+    reason?: string;
 }
 
-const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onUpgrade }) => {
+const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onUpgrade, reason }) => {
     if (!isOpen) return null;
 
     return (
@@ -15,9 +16,15 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onUpgrade 
                 <div style={{ textAlign: 'center' }}>
                     <span style={{ fontSize: '48px' }} role="img" aria-label="Rocket">🚀</span>
                     <h2 style={{ marginTop: '16px', color: 'var(--primary-color)' }}>Investeer in je glow-up.</h2>
-                    <p style={{ color: 'var(--subtle-text)', lineHeight: 1.6 }}>
-                        Upgrade naar GLOW PRO en ontgrendel alle tools om met zelfvertrouwen je examens in te gaan.
-                    </p>
+                    {reason ? (
+                         <p style={{ color: 'var(--subtle-text)', lineHeight: 1.6, fontSize: '18px', fontWeight: 500 }}>
+                            Upgrade naar GLOW PRO {reason}
+                         </p>
+                    ) : (
+                         <p style={{ color: 'var(--subtle-text)', lineHeight: 1.6 }}>
+                            Upgrade naar GLOW PRO en ontgrendel alle tools om met zelfvertrouwen je examens in te gaan.
+                        </p>
+                    )}
                 </div>
 
                 <ul className="feature-list" style={{gridTemplateColumns: '1fr', gap: '16px', margin: '24px 0'}}>
@@ -30,19 +37,19 @@ const UpgradeModal: React.FC<UpgradeModalProps> = ({ isOpen, onClose, onUpgrade 
                     <li className="feature-item">
                         <div className="feature-icon" style={{backgroundColor: 'var(--background-color)'}}>✓</div>
                         <div>
-                            <h3 style={{ margin: 0, fontSize: '16px' }}>24/7 toegang tot je GLOW AI coach</h3>
+                            <h3 style={{ margin: 0, fontSize: '16px' }}>Nodig vrienden uit & deel content</h3>
                         </div>
                     </li>
                     <li className="feature-item">
                         <div className="feature-icon" style={{backgroundColor: 'var(--background-color)'}}>✓</div>
                         <div>
-                            <h3 style={{ margin: 0, fontSize: '16px' }}>Alle vakken, nu en in de toekomst</h3>
+                            <h3 style={{ margin: 0, fontSize: '16px' }}>24/7 toegang tot je GLOW AI coach</h3>
                         </div>
                     </li>
                      <li className="feature-item">
                         <div className="feature-icon" style={{backgroundColor: 'var(--background-color)'}}>✓</div>
                         <div>
-                            <h3 style={{ margin: 0, fontSize: '16px' }}>Exclusieve toegang tot alle premium tools</h3>
+                            <h3 style={{ margin: 0, fontSize: '16px' }}>Alle premium tools & AI-analyses</h3>
                         </div>
                     </li>
                 </ul>

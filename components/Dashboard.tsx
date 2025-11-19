@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
-import StudyPlanner from './StudyPlanner.tsx';
-import Badges from './Badges.tsx';
-import SummaryCard from './SummaryCard.tsx';
-import Logo from './Logo.tsx';
-import { summaries } from '../data/summaries.ts';
-import type { MasteryScore, StudyPlan, Mistake, PlannerWeek, Badge } from '../data/data.ts';
 
-type Subject = 'Nederlands' | 'Engels' | 'Natuurkunde' | 'Biologie' | 'Economie';
+import React, { useState, useEffect, useRef } from 'react';
+import StudyPlanner from './StudyPlanner.tsx';
+import DailyQuests from './DailyQuests.tsx';
+import Logo from './Logo.tsx';
+import ProgressReport from './ProgressReport.tsx';
+import StudySquad from './StudySquad.tsx';
+import FlashcardsView from './FlashcardsView.tsx';
+import SummaryHub from './SummaryHub.tsx';
+import ProactiveGreeting from './ProactiveGreeting.tsx';
+import ParentDashboard from './ParentDashboard.tsx';
+import { generateContentWithRetry } from '../api/gemini.ts';
+import { Type } from "@google/genai";
+import type { MasteryScore, StudyPlan, Mistake, PlannerWeek, Badge, DailyQuests as DailyQuestsType, Quest, ProgressHistoryEntry, FlashcardDeck, ChatMessage, User, SquadData } from '../data/data.ts';
+
+type Subject = 'Nederlands' | 'Engels' | 'Natuurkunde' | 'Biologie' | 'Economie' | 'Geschiedenis' | 'Scheikunde' | 'Bedrijfseconomie' | 'Wiskunde A' | 'Wiskunde B' | 'Frans' | 'Duits';
+type DashboardTab = 'sessie' | 'planner' | 'voortgang' | 'squad' | 'tools' | 'samenvatting' | 'flashcards' | 'ouderoverzicht';
 
 interface DashboardProps {
     masteryScores: { [key: string]: MasteryScore };
-    onStartSession: () => void;
+    onStartSession: (focusSkill?: string) => void;
     isGeneratingSession: boolean;
     onReset: () => void;
     studyStreak: number;
@@ -26,13 +34,14 @@ interface DashboardProps {
     onToggleTask: (weekIndex: number, taskIndex: number) => void;
     onReviewWeek: (week: PlannerWeek) => void;
     onShowInfo: (infoType: 'syllabus' | 'components') => void;
+    onStartActionableTask: (weekIndex: number, taskIndex: number, actionType: string, context?: string) => void;
     repetitionQueue: Mistake[];
     onStartRepetition: () => void;
-    onOpenChat: () => void;
+    onOpenChat: (context?: {type: string, data: any} | null, mode?: 'default' | 'question_generation', systemInstructionOverride?: string) => void;
     onOpenChatForQuestionGeneration: () => void;
     onOpenZenZone: () => void;
     isPremium: boolean;
-    onUpgrade: () => void;
+    onUpgrade: (reason: string) => void;
     onAnalyzeMistakes: () => void;
     hasMistakes: boolean;
     currentSubject: Subject;
@@ -43,6 +52,29 @@ interface DashboardProps {
     setTheme: (theme: 'light' | 'dark') => void;
     allBadges: Badge[];
     earnedBadges: string[];
+    dailyQuests: DailyQuestsType | null;
+    onGenerateDailyQuests: () => void;
+    isGeneratingQuests: boolean;
+    onStartQuest: (quest: Quest) => void;
+    onStartExam: () => void;
+    onOpenUploadModal: () => void;
+    progressHistory: ProgressHistoryEntry[];
+    flashcardDecks: FlashcardDeck[];
+    onAddFlashcardDeck: (deck: FlashcardDeck) => void;
+    onCreateDeckFromSummary: (summaryText: string) => Promise<FlashcardDeck | null>;
+    onGenerateProgressAnalysis: () => Promise<string>;
+    onOpenAuthModal: () => void;
+    proactiveInsight: { greeting: string; suggestion: string; action: string; context?: string } | null;
+    onProactiveAction: (action: string, context?: string) => void;
+    onShareDeck: (deck: FlashcardDeck) => void;
+    squadData: SquadData;
+    user: User | null;
+    onLogout: () => void;
+    onLogoClick: () => void;
+    onOpenSquadOfficeHours: () => void;
+    onGenerateParentTips: () => void;
+    parentTip: string;
+    isGeneratingParentTip: boolean;
 }
 
 const DAILY_ANSWER_LIMIT_FREE = 15;
@@ -74,31 +106,299 @@ const ThemeToggle = ({ theme, setTheme }) => (
 
 const Dashboard: React.FC<DashboardProps> = (props) => {
   const { 
-      masteryScores, onStartSession, isGeneratingSession, onReset, studyStreak, level, xp, xpForNextLevel, examDate, setExamDate, studyPlan, generatePlan, updatePlan, isGeneratingPlan, onToggleTask, onReviewWeek, onShowInfo, repetitionQueue, onStartRepetition, onOpenChat, onOpenChatForQuestionGeneration, onOpenZenZone, isPremium, onUpgrade, onAnalyzeMistakes, hasMistakes, currentSubject, onSubjectChange, answerLimitReached, dailyAnswers, theme, setTheme, allBadges, earnedBadges
+      masteryScores, onStartSession, isGeneratingSession, onReset, studyStreak, level, xp, xpForNextLevel, examDate, setExamDate, studyPlan, generatePlan, updatePlan, isGeneratingPlan, onToggleTask, onReviewWeek, onShowInfo, onStartActionableTask, repetitionQueue, onStartRepetition, onOpenChat, onOpenChatForQuestionGeneration, onOpenZenZone, isPremium, onUpgrade, onAnalyzeMistakes, hasMistakes, currentSubject, onSubjectChange, answerLimitReached, dailyAnswers, theme, setTheme, allBadges, earnedBadges, dailyQuests, onGenerateDailyQuests, isGeneratingQuests, onStartQuest, onStartExam, onOpenUploadModal, progressHistory, flashcardDecks, onAddFlashcardDeck, onCreateDeckFromSummary, onGenerateProgressAnalysis, onOpenAuthModal, proactiveInsight, onProactiveAction, onShareDeck, squadData, user, onLogout, onLogoClick, onOpenSquadOfficeHours, onGenerateParentTips, parentTip, isGeneratingParentTip
   } = props;
   
-  const [activeTab, setActiveTab] = useState<'sessie' | 'planner' | 'tools' | 'samenvatting'>('sessie');
+  const [activeTab, setActiveTab] = useState<DashboardTab>('sessie');
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isSubjectPickerOpen, setIsSubjectPickerOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const subjectPickerRef = useRef<HTMLDivElement>(null);
+  
   const xpPercentage = xpForNextLevel > 0 ? Math.round((xp / xpForNextLevel) * 100) : 0;
+  
+  const subjects: Subject[] = ['Nederlands', 'Engels', 'Wiskunde A', 'Wiskunde B', 'Natuurkunde', 'Scheikunde', 'Biologie', 'Economie', 'Bedrijfseconomie', 'Geschiedenis', 'Frans', 'Duits'];
+  const subjectIcons: { [key in Subject]: string } = {
+    'Nederlands': '📖', 'Engels': '🇬🇧', 'Wiskunde A': '📐', 'Wiskunde B': '∫', 'Natuurkunde': '⚛️', 'Scheikunde': '🧪', 'Biologie': '🧬', 'Economie': '📈', 'Bedrijfseconomie': '💼', 'Geschiedenis': '🏛️', 'Frans': '🇫🇷', 'Duits': '🇩🇪'
+  };
+
+  const getTodayISO = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return today.toISOString().split('T')[0];
+  }
+
+  useEffect(() => {
+    const today = getTodayISO();
+    if (!dailyQuests || dailyQuests.date !== today) {
+        onGenerateDailyQuests();
+    }
+  }, [dailyQuests, onGenerateDailyQuests, currentSubject]);
+  
+    useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+      if (subjectPickerRef.current && !subjectPickerRef.current.contains(event.target as Node)) {
+        setIsSubjectPickerOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [profileRef, subjectPickerRef]);
+
+  const handleMagicCreateDeck = async (title: string, keywords: string): Promise<FlashcardDeck | null> => {
+        const prompt = `Genereer een flashcard deck voor VWO ${currentSubject}.
+        - Titel: "${title}"
+        - Sleutelwoorden: "${keywords}"
+
+        TAAK: Maak een JSON object met een "cards" array. Elke kaart heeft een "question" en "answer". Genereer 5-7 relevante kaarten. De "question" moet een kernbegrip dat relevant is voor het VWO eindexamen. Het "answer" moet de definitie of uitleg zijn zoals een leerling die moet kennen voor het examen. Zorg voor duidelijke, beknopte vragen en antwoorden.`;
+        try {
+            const response = await generateContentWithRetry({
+                model: 'gemini-2.5-flash',
+                contents: prompt,
+                config: {
+                    responseMimeType: 'application/json',
+                    responseSchema: {
+                        type: Type.OBJECT,
+                        properties: {
+                            cards: {
+                                type: Type.ARRAY,
+                                items: {
+                                    type: Type.OBJECT,
+                                    properties: {
+                                        question: { type: Type.STRING },
+                                        answer: { type: Type.STRING },
+                                    },
+                                    required: ["question", "answer"]
+                                }
+                            }
+                        },
+                        required: ["cards"]
+                    }
+                }
+            });
+            const deckData = JSON.parse(response.text);
+            const newDeck: FlashcardDeck = {
+                id: Date.now(),
+                title,
+                cards: deckData.cards
+            };
+            onAddFlashcardDeck(newDeck);
+            return newDeck;
+        } catch (e) {
+            console.error(e);
+            return null;
+        }
+  };
+  
+    const totalAnsweredQuestions = Object.values(masteryScores).reduce((sum: number, score: MasteryScore) => sum + score.total, 0);
+
+  const renderContent = () => {
+      if (activeTab === 'voortgang') {
+          return <ProgressReport 
+                      masteryScores={masteryScores} 
+                      progressHistory={progressHistory} 
+                      onGenerateAnalysis={onGenerateProgressAnalysis}
+                      allBadges={allBadges}
+                      earnedBadges={earnedBadges}
+                  />;
+      }
+      if (activeTab === 'squad') {
+          return <StudySquad squadData={squadData} onUpgrade={onUpgrade} isPremium={isPremium} onOpenSquadOfficeHours={onOpenSquadOfficeHours} />;
+      }
+      if (activeTab === 'flashcards') {
+          return <FlashcardsView decks={flashcardDecks} onAddDeck={onAddFlashcardDeck} onMagicCreate={handleMagicCreateDeck} onShareDeck={onShareDeck} />;
+      }
+      if (activeTab === 'samenvatting') {
+          return <SummaryHub 
+                      currentSubject={currentSubject}
+                      onOpenChat={onOpenChat}
+                      onCreateDeckFromSummary={onCreateDeckFromSummary}
+                      onUpgrade={() => onUpgrade("om ongelimiteerde AI-samenvattingen te genereren.")}
+                      isPremium={isPremium}
+                  />;
+      }
+      if (activeTab === 'ouderoverzicht') {
+          return <ParentDashboard 
+                    masteryScores={masteryScores}
+                    studyStreak={studyStreak}
+                    totalAnswered={totalAnsweredQuestions}
+                    onGenerateTip={onGenerateParentTips}
+                    tip={parentTip}
+                    isLoadingTip={isGeneratingParentTip}
+                    studyPlan={studyPlan}
+                 />;
+      }
+
+      // Default focused column layout
+      return (
+          <div className="dashboard-main-column">
+              {activeTab === 'sessie' && (
+                  <>
+                      {proactiveInsight && (
+                          <ProactiveGreeting insight={proactiveInsight} onAction={onProactiveAction} />
+                      )}
+
+                      {repetitionQueue.length > 0 && (
+                          <div className="card">
+                              <h3 style={{ marginBottom: '12px' }}>Gespreide Herhaling</h3>
+                              <p style={{ margin: 0, color: 'var(--subtle-text)', fontSize: '14px' }}>
+                                  Je hebt {repetitionQueue.length} opgave{repetitionQueue.length > 1 ? 's' : ''} klaarstaan om je geheugen te testen.
+                              </p>
+                              <button className="button button-secondary" onClick={onStartRepetition} style={{ marginTop: '16px' }}>
+                                  Start Herhaling ({repetitionQueue.length})
+                              </button>
+                          </div>
+                      )}
+
+                      <div className="dashboard-hero card">
+                          <h2 style={{ marginBottom: '12px' }}>Vandaag: Start je Studiesessie</h2>
+                          <p style={{ marginBottom: '16px', color: 'var(--subtle-text)' }}>
+                              De AI stelt een persoonlijke sessie voor op basis van jouw voortgang.
+                          </p>
+                          {!isPremium &&
+                              <div className="daily-limit-tracker" style={{ marginBottom: '16px' }}>
+                                  <span>Dagelijkse vragen: {dailyAnswers.count}/{DAILY_ANSWER_LIMIT_FREE}</span>
+                                  <div className="progress-bar" style={{ height: '8px', marginTop: '8px' }}>
+                                      <div className="progress-fill skill-progress-fill" style={{ width: `${(dailyAnswers.count / DAILY_ANSWER_LIMIT_FREE) * 100}%` }}></div>
+                                  </div>
+                              </div>
+                          }
+                          <button 
+                            className="button" 
+                            onClick={() => onStartSession()} 
+                            disabled={answerLimitReached || isGeneratingSession}
+                          >
+                              {isGeneratingSession ? 'Sessie voorbereiden...' : (answerLimitReached ? "Dagelijkse Limiet Bereikt" : "Start Oefensessie")}
+                          </button>
+                      </div>
+                      
+                      <DailyQuests
+                          quests={dailyQuests}
+                          onStartQuest={onStartQuest}
+                          isLoading={isGeneratingQuests}
+                      />
+                  </>
+              )}
+
+              {activeTab === 'planner' && (
+                  <div className="card">
+                      <StudyPlanner
+                          examDate={examDate}
+                          setExamDate={setExamDate}
+                          studyPlan={studyPlan}
+                          generatePlan={generatePlan}
+                          updatePlan={updatePlan}
+                          isGenerating={isGeneratingPlan}
+                          onToggleTask={onToggleTask}
+                          onReviewWeek={onReviewWeek}
+                          onShowInfo={onShowInfo}
+                          onStartActionableTask={onStartActionableTask}
+                      />
+                  </div>
+              )}
+
+              {activeTab === 'tools' && (
+                  <div className="card">
+                      <h3 style={{ marginBottom: '16px' }}>Slimme Tools</h3>
+                      <div className="button-grid-vertical">
+                          <button className="button button-secondary" onClick={onStartExam}>
+                              Start Proefexamen <span className="pro-badge">PRO</span>
+                          </button>
+                          {hasMistakes && (
+                              <button className="button button-secondary" onClick={onAnalyzeMistakes}>
+                                  Analyseer Mijn Fouten <span className="pro-badge">PRO</span>
+                              </button>
+                          )}
+                          <button className="button button-secondary" onClick={onOpenUploadModal}>
+                              Analyseer je Samenvatting <span className="pro-badge">PRO</span>
+                          </button>
+                          <button className="button button-secondary" onClick={() => onOpenChat()}>
+                              Chat met GLOW AI
+                          </button>
+                          <button className="button button-secondary" onClick={onOpenChatForQuestionGeneration}>
+                              Genereer Oefenvragen
+                          </button>
+                          <button className="button button-secondary" onClick={onOpenZenZone}>
+                              Ga naar de Zen Zone
+                          </button>
+                      </div>
+                  </div>
+              )}
+              
+               <div style={{ textAlign: 'center', paddingBottom: '16px', marginTop: '0' }}>
+                  <button className="button-tertiary" onClick={onReset}>Reset Alle Voortgang</button>
+              </div>
+          </div>
+      );
+  };
+
 
   return (
     <div className="dashboard-container">
-        <div className="dashboard-header" style={{ marginBottom: '24px' }}>
-            <div>
-                 <div className="dashboard-logo-container" style={{
-                     maxWidth: '200px',
-                     marginBottom: '8px',
-                     display: 'flex',
-                     alignItems: 'center',
-                     gap: '8px'
-                 }}>
+        <header className="app-header">
+            <div className="header-left">
+                 <div className="dashboard-logo-container" onClick={onLogoClick} style={{ cursor: 'pointer' }}>
                     <Logo style={{ maxWidth: '100%', height: 'auto' }} />
                     {isPremium && <span className="premium-badge">PRO</span>}
                  </div>
-                 <p className="dashboard-subtitle" style={{ margin: 0 }}>
-                     Welkom terug. Klaar voor je glow-up?
-                 </p>
             </div>
-            <div className="header-controls">
+
+            <nav className="header-center-nav">
+                <button onClick={() => setActiveTab('sessie')} className={activeTab === 'sessie' ? 'active' : ''}>
+                    Vandaag
+                </button>
+                <button onClick={() => setActiveTab('planner')} className={activeTab === 'planner' ? 'active' : ''}>
+                    Planner
+                </button>
+                <button onClick={() => setActiveTab('voortgang')} className={activeTab === 'voortgang' ? 'active' : ''}>
+                    Voortgang
+                </button>
+                <button onClick={() => setActiveTab('squad')} className={activeTab === 'squad' ? 'active' : ''}>
+                    Squad
+                </button>
+                 <button onClick={() => setActiveTab('flashcards')} className={activeTab === 'flashcards' ? 'active' : ''}>
+                    Flashcards
+                </button>
+                 <button onClick={() => setActiveTab('tools')} className={activeTab === 'tools' ? 'active' : ''}>
+                    Tools
+                </button>
+                <button onClick={() => setActiveTab('samenvatting')} className={activeTab === 'samenvatting' ? 'active' : ''}>
+                    Samenvatting
+                </button>
+                <button onClick={() => setActiveTab('ouderoverzicht')} className={activeTab === 'ouderoverzicht' ? 'active' : ''}>
+                    Ouderoverzicht
+                </button>
+            </nav>
+
+            <div className="header-right">
+                <div className="subject-picker-container" ref={subjectPickerRef}>
+                    <button className="subject-picker-trigger" onClick={() => setIsSubjectPickerOpen(!isSubjectPickerOpen)} aria-expanded={isSubjectPickerOpen} aria-haspopup="true">
+                        <span className="subject-picker-icon">{subjectIcons[currentSubject]}</span>
+                        <span>{currentSubject}</span>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"></path></svg>
+                    </button>
+                    {isSubjectPickerOpen && (
+                        <div className="subject-picker-dropdown">
+                            {subjects.map(subject => (
+                                <button
+                                    key={subject}
+                                    className={`subject-picker-item ${subject === currentSubject ? 'active' : ''}`}
+                                    onClick={() => {
+                                        onSubjectChange(subject);
+                                        setIsSubjectPickerOpen(false);
+                                    }}
+                                >
+                                    <span className="subject-picker-icon">{subjectIcons[subject]}</span>
+                                    {subject}
+                                    {subject === currentSubject && <svg className="checkmark-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"></path></svg>}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
                 {studyStreak > 0 && (
                     <div className="study-streak" title={`${studyStreak} day streak!`}>
                         <svg width="24" height="24" viewBox="0 0 16 16" fill="currentColor">
@@ -107,161 +407,42 @@ const Dashboard: React.FC<DashboardProps> = (props) => {
                         <span>{studyStreak}</span>
                     </div>
                 )}
-                <ThemeToggle theme={theme} setTheme={setTheme} />
-            </div>
-        </div>
-        
-        <div className="subject-switcher" style={{ marginBottom: '20px' }}>
-            <button onClick={() => onSubjectChange('Nederlands')} className={currentSubject === 'Nederlands' ? 'active' : ''}>
-                Nederlands
-            </button>
-            <button onClick={() => onSubjectChange('Engels')} className={currentSubject === 'Engels' ? 'active' : ''}>
-                Engels
-            </button>
-            <button onClick={() => onSubjectChange('Natuurkunde')} className={currentSubject === 'Natuurkunde' ? 'active' : ''}>
-                Natuurkunde
-            </button>
-            <button onClick={() => onSubjectChange('Biologie')} className={currentSubject === 'Biologie' ? 'active' : ''}>
-                Biologie
-            </button>
-            <button onClick={() => onSubjectChange('Economie')} className={currentSubject === 'Economie' ? 'active' : ''}>
-                Economie
-            </button>
-        </div>
-        
-        <div className="dashboard-tabs" style={{ marginBottom: '24px' }}>
-            <button onClick={() => setActiveTab('sessie')} className={activeTab === 'sessie' ? 'active' : ''}>
-                Studiesessie
-            </button>
-            <button onClick={() => setActiveTab('planner')} className={activeTab === 'planner' ? 'active' : ''}>
-                Planner
-            </button>
-            <button onClick={() => setActiveTab('tools')} className={activeTab === 'tools' ? 'active' : ''}>
-                Tools
-            </button>
-            <button onClick={() => setActiveTab('samenvatting')} className={activeTab === 'samenvatting' ? 'active' : ''}>
-                Samenvatting
-            </button>
-        </div>
-
-        <div className="dashboard-tab-content">
-            {activeTab === 'sessie' && (
-                <>
-                    <div className="dashboard-hero card">
-                        <h2 style={{ marginBottom: '12px' }}>Start een Studiesessie</h2>
-                        <p style={{ marginBottom: '16px' }}>
-                            De AI stelt een persoonlijke sessie voor op basis van jouw voortgang.
-                        </p>
-                        {!isPremium && 
-                            <div className="daily-limit-tracker" style={{ marginBottom: '16px' }}>
-                               <span>Dagelijkse vragen: {dailyAnswers.count}/{DAILY_ANSWER_LIMIT_FREE}</span>
-                               <div className="progress-bar" style={{ height: '8px', marginTop: '8px' }}>
-                                   <div className="progress-fill skill-progress-fill" style={{ width: `${(dailyAnswers.count / DAILY_ANSWER_LIMIT_FREE) * 100}%` }}></div>
-                               </div>
-                            </div>
-                        }
-                        <button className="button" onClick={onStartSession} disabled={answerLimitReached || isGeneratingSession}>
-                          {isGeneratingSession ? 'Sessie voorbereiden...' : (answerLimitReached ? "Dagelijkse Limiet Bereikt" : "Start Oefensessie")}
-                        </button>
+                 <div className="header-xp-progress">
+                    <div className="header-xp-info">
+                        <span>Niveau {level}</span>
+                        <span style={{color: 'var(--xp-color)'}}>{xp} / {xpForNextLevel}</span>
                     </div>
-                    
-                    <Badges allBadges={allBadges} earnedBadges={earnedBadges} />
-
-                    <div className="card">
-                        <h3 style={{ marginBottom: '16px' }}>Mijn Vaardigheden</h3>
-                        <div className="level-progress" style={{ marginBottom: '20px' }}>
-                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                <span style={{ fontWeight: 600 }}>Niveau {level}</span>
-                                <span style={{ fontWeight: 500, color: 'var(--subtle-text)' }}>{xp} / {xpForNextLevel} XP</span>
-                            </div>
-                            <div className="progress-bar">
-                                <div className="progress-fill xp-progress-fill" style={{ width: `${xpPercentage}%` }}></div>
-                            </div>
-                        </div>
-                        {Object.keys(masteryScores).length > 0 ? (
-                            Object.entries(masteryScores).map(([skill, score]: [string, MasteryScore]) => {
-                                const percentage = score.total > 0 ? Math.round((score.correct / score.total) * 100) : 0;
-                                return (
-                                    <div className="skill-progress" key={skill} style={{ marginBottom: '16px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                          <span style={{ fontWeight: 600 }}>{skill}</span>
-                                          <span style={{ fontWeight: 500, color: 'var(--subtle-text)' }}>{percentage}%</span>
-                                        </div>
-                                        <div className="progress-bar">
-                                          <div className="progress-fill skill-progress-fill" style={{ width: `${percentage}%` }}></div>
-                                        </div>
-                                    </div>
-                                );
-                            })
-                        ) : (
-                            <p style={{ margin: '8px 0 0 0', color: 'var(--subtle-text)', fontSize: '14px', textAlign: 'center' }}>
-                                Nog geen voortgang. Start een sessie om te beginnen!
-                            </p>
-                        )}
-                    </div>
-                </>
-            )}
-
-            {activeTab === 'planner' && (
-                <>
-                    <div className="card">
-                        <StudyPlanner 
-                            examDate={examDate}
-                            setExamDate={setExamDate}
-                            studyPlan={studyPlan}
-                            generatePlan={generatePlan}
-                            updatePlan={updatePlan}
-                            isGenerating={isGeneratingPlan}
-                            onToggleTask={onToggleTask}
-                            onReviewWeek={onReviewWeek}
-                            onShowInfo={onShowInfo}
-                        />
-                    </div>
-                    {!isPremium && (
-                        <div className="card upgrade-card">
-                            <h3 style={{ marginBottom: '12px' }}>Ontgrendel je Volledige Potentieel</h3>
-                            <p style={{ marginBottom: '16px' }}>
-                                Krijg onbeperkt vragen, onbeperkte AI-chat en toegang tot alle toekomstige vakken.
-                            </p>
-                            <button className="button" onClick={onUpgrade}>Upgrade naar GLOW PRO</button>
-                        </div>
-                    )}
-                </>
-            )}
-            
-            {activeTab === 'tools' && (
-                 <div className="card">
-                    <h3 style={{ marginBottom: '16px' }}>Slimme Tools</h3>
-                    <div className="button-grid-vertical">
-                        <button className="button button-secondary" onClick={onStartRepetition} disabled={repetitionQueue.length === 0}>
-                            Gespreide Herhaling ({repetitionQueue.length})
-                        </button>
-                         {hasMistakes && (
-                            <button className="button button-secondary" onClick={onAnalyzeMistakes}>
-                                Analyseer Mijn Fouten
-                            </button>
-                        )}
-                        <button className="button button-secondary" onClick={onOpenChat}>
-                            Chat met GLOW AI
-                        </button>
-                        <button className="button button-secondary" onClick={onOpenChatForQuestionGeneration}>
-                            Genereer Oefenvragen
-                        </button>
-                        <button className="button button-secondary" onClick={onOpenZenZone}>
-                           Ga naar de Zen Zone
-                        </button>
+                    <div className="progress-bar" style={{height: '6px'}}>
+                        <div className="progress-fill xp-progress-fill" style={{ width: `${xpPercentage}%` }}></div>
                     </div>
                 </div>
-            )}
-            
-            {activeTab === 'samenvatting' && (
-                <SummaryCard subject={currentSubject} content={summaries[currentSubject]} />
-            )}
-        </div>
-        
-        <div style={{ textAlign: 'center', paddingBottom: '16px', marginTop: '32px' }}>
-            <button className="button-tertiary" onClick={onReset}>Reset Alle Voortgang</button>
-        </div>
+                <ThemeToggle theme={theme} setTheme={setTheme} />
+                {user ? (
+                    <div className="user-profile" ref={profileRef}>
+                        <button className="user-profile-trigger" onClick={() => setIsProfileOpen(!isProfileOpen)} aria-label="Open user menu" aria-expanded={isProfileOpen}>
+                             <img src={user.picture} alt={user.name} className="user-avatar" />
+                        </button>
+                        {isProfileOpen && (
+                            <div className="profile-dropdown">
+                                <div className="profile-dropdown-header">
+                                    <strong>{user.name}</strong>
+                                    <span className="profile-dropdown-email">{user.email}</span>
+                                </div>
+                                <button onClick={onLogout} className="profile-dropdown-button">
+                                    Log uit
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                ) : (
+                    <button className="button-tertiary auth-button" onClick={onOpenAuthModal}>Inloggen</button>
+                )}
+            </div>
+        </header>
+
+        <main className="dashboard-content-area">
+          {renderContent()}
+        </main>
     </div>
   );
 };

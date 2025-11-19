@@ -1,6 +1,5 @@
 import React from 'react';
 
-// FIX: Update component to accept SVG props, including `style`, to resolve type errors in parent components.
 const Logo = (props: React.SVGProps<SVGSVGElement>) => {
     // This SVG is based on the user's provided code.
     // The fill color for "EXAMEN" is set to 'var(--text-color)' to automatically adapt to light/dark themes.

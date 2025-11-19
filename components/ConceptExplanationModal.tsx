@@ -6,7 +6,7 @@ interface ConceptExplanationModalProps {
     conceptName: string;
     explanation: string;
     isLoading: boolean;
-    onExplainEli5: (originalExplanation: string, conceptName:string) => Promise<string>;
+    onExplainEli5: (originalExplanation: string) => Promise<string>;
 }
 
 const ConceptExplanationModal: React.FC<ConceptExplanationModalProps> = ({ isOpen, onClose, conceptName, explanation, isLoading, onExplainEli5 }) => {
@@ -22,7 +22,7 @@ const ConceptExplanationModal: React.FC<ConceptExplanationModalProps> = ({ isOpe
 
     const handleEli5Click = async () => {
         setIsEli5Loading(true);
-        const result = await onExplainEli5(explanation, conceptName);
+        const result = await onExplainEli5(explanation);
         setEli5Explanation(result);
         setIsEli5Loading(false);
     };

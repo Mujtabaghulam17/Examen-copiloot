@@ -161,5 +161,180 @@ Het Centraal Examen Economie VWO bevat contextrijke opgaven, vaak gebaseerd op a
 *Let op: Het examen legt een sterke nadruk op het toepassen van economische concepten en modellen op realistische scenario's. Het kunnen onderbouwen van je antwoord met economische aannames is essentieel.*
 `
         }
+    },
+    Geschiedenis: {
+        syllabus: {
+            title: 'Syllabus Geschiedenis VWO',
+            content: `
+### Historische Contexten
+- **De Republiek:** De Opstand en de Gouden Eeuw (1515-1648).
+- **Verlichtingsideeën en de Democratische Revoluties:** (1650-1848).
+- **Duitsland in Europa:** (1918-1991).
+- **De Koude Oorlog:** (1945-1991).
+
+### Kenmerkende Aspecten
+- De tien tijdvakken met hun kenmerkende aspecten vormen de basis van het examen.
+- Vaardigheden in het verbinden van gebeurtenissen aan deze aspecten worden getoetst.
+`
+        },
+        components: {
+            title: 'Examenonderdelen Geschiedenis VWO',
+            content: `
+Het Centraal Examen Geschiedenis VWO bestaat uit open vragen, vaak gebaseerd op historische bronnen.
+
+### Vraagtypen
+- **Bronanalyse:** Vragen over de betrouwbaarheid, representativiteit en het doel van een historische bron.
+- **Kennisvragen:** Het reproduceren van kennis over historische gebeurtenissen en personen.
+- **Contextvragen:** Het plaatsen van een gebeurtenis of bron in de juiste historische context.
+
+*Let op: Het examen vereist zowel feitenkennis als het vermogen om historisch te redeneren en bronnen kritisch te analyseren.*
+`
+        }
+    },
+    Scheikunde: {
+        syllabus: {
+            title: 'Syllabus Scheikunde VWO',
+            content: `
+### Hoofddomeinen
+- **Materie:** Atoombouw, bindingen, molecuulstructuren, stofeigenschappen.
+- **Reacties:** Reactiesnelheid, chemisch evenwicht, redoxchemie, zuren en basen.
+- **Industriële processen:** Blokschema's, duurzaamheid en groene chemie.
+- **Koolstofchemie:** Systematische naamgeving, reactietypes en polymeren.
+`
+        },
+        components: {
+            title: 'Examenonderdelen Scheikunde VWO',
+            content: `
+Het Centraal Examen Scheikunde VWO bestaat uit open vragen.
+
+### Vraagtypen
+- **Rekenopgaven:** O.a. molrekenen, pH-berekeningen en evenwichtsvoorwaarden.
+- **Reactievergelijkingen:** Het opstellen en afmaken van reactievergelijkingen.
+- **Uitlegvragen:** Het verklaren van waarnemingen op moleculair niveau (microniveau).
+
+*Let op: Net als bij Natuurkunde is het correct gebruiken van Binas en het uitvoeren van berekeningen met de juiste significantie van groot belang.*
+`
+        }
+    },
+    Bedrijfseconomie: {
+        syllabus: {
+            title: 'Syllabus Bedrijfseconomie VWO',
+            content: `
+### Hoofddomeinen
+- **Financiële zelfredzaamheid:** Persoonlijke financiële planning.
+- **Onderneming en Organisatie:** Rechtsvormen, marketing, strategie.
+- **Financiering:** Vermogensbehoefte, eigen en vreemd vermogen, financiële markten.
+- **Verslaggeving:** De balans, resultatenrekening, analyse van financiële overzichten.
+`
+        },
+        components: {
+            title: 'Examenonderdelen Bedrijfseconomie VWO',
+            content: `
+Het Centraal Examen Bedrijfseconomie VWO bevat contextrijke opgaven, vaak met uitgebreide bronnen.
+
+### Vraagtypen
+- **Berekeningen:** O.a. kostprijsberekeningen, balans- en resultatenrekening opstellen.
+- **Analyse:** Het interpreteren van financiële gegevens en kengetallen.
+- **Redeneervragen:** Het onderbouwen van een bedrijfsmatige beslissing.
+
+*Let op: Het examen test je vermogen om bedrijfseconomische problemen in een realistische context op te lossen. Zorgvuldigheid en een gestructureerde aanpak zijn essentieel.*
+`
+        }
+    },
+    'Wiskunde A': {
+        syllabus: {
+            title: 'Syllabus Wiskunde A VWO',
+            content: `
+### Hoofddomeinen
+- **Algebra en verbanden:** Formules, functies, grafieken en vergelijkingen.
+- **Statistiek en kansrekening:** Data analyseren,än statistische methoden,änänänänänänänänänänänänänänänänänänänänän kansmodellen enänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänänän t oetsen.
+- **Rijen en praktische rekenkunde:** Rekenkundige en meetkundige rijen, financiële berekeningen.
+`
+        },
+        components: {
+            title: 'Examenonderdelen Wiskunde A VWO',
+            content: `
+Het Centraal Examen Wiskunde A VWO bestaat uit open vragen in contextrijke opgaven.
+
+### Vraagtypen
+- **Modelering:** Het opstellen van een wiskundig model (formule) voor een gegeven situatie.
+- **Berekeningen:** Algebraïsche en statistische berekeningen.
+- **Redeneren:** Het wiskundig onderbouwen van een conclusie.
+
+*Let op: De nadruk ligt op de toepassing van wiskunde in realistische contexten. Het gebruik van de grafische rekenmachine is essentieel.*
+`
+        }
+    },
+    'Wiskunde B': {
+        syllabus: {
+            title: 'Syllabus Wiskunde B VWO',
+            content: `
+### Hoofddomeinen
+- **Algebra en getallen:** Vaardigheden met algebra, machten, logaritmen.
+- **Analyse:** Differentiëren, integreren, functies en grafieken.
+- **Meetkunde:** Goniometrie, analytische meetkunde, vectoren.
+`
+        },
+        components: {
+            title: 'Examenonderdelen Wiskunde B VWO',
+            content: `
+Het Centraal Examen Wiskunde B VWO richt zich op abstracte wiskunde en exacte berekeningen.
+
+### Vraagtypen
+- **Exacte berekeningen:** Algebraïsche oplossingen zonder rekenmachine.
+- **Bewijsvragen:** Het leveren van een formeel wiskundig bewijs.
+- **Analyse en meetkunde:** Het toepassen van calculus en meetkundige principes.
+
+*Let op: De nadruk ligt op abstract redeneren en algebraïsche vaardigheden. Veel opgaven moeten exact worden opgelost.*
+`
+        }
+    },
+    Frans: {
+        syllabus: {
+            title: 'Syllabus Frans VWO',
+            content: `
+### Domein A: Leesvaardigheid
+- **Tekstbegrip:** Begrijpen van de hoofdgedachte en details van authentieke Franse teksten (C1-niveau).
+- **Tekstsoorten:** Om kunnen gaan met diverse tekstsoorten zoals nieuwsartikelen, recensies en opiniestukken.
+- **Woordenschat en idioom:** Beschikken over een brede woordenschat.
+`
+        },
+        components: {
+            title: 'Examenonderdelen Frans VWO',
+            content: `
+Het Centraal Examen Frans VWO is, net als Engels, volledig gericht op leesvaardigheid.
+
+### Teksten met vragen
+- **Weging:** 100% van de totale score.
+- **Inhoud:** Een examenboekje met diverse Franstalige teksten.
+- **Vraagtypen:** Grotendeels meerkeuzevragen, gericht op tekstbegrip, woordenschat en analyse van de tekststructuur.
+
+*Let op: Een goede woordenschat en het vermogen om de structuur van een Franse tekst te doorgronden zijn cruciaal.*
+`
+        }
+    },
+    Duits: {
+        syllabus: {
+            title: 'Syllabus Duits VWO',
+            content: `
+### Domein A: Leesvaardigheid
+- **Tekstbegrip:** Begrijpen van de hoofdgedachte en details van authentieke Duitse teksten (C1-niveau).
+- **Tekstsoorten:** Om kunnen gaan met diverse tekstsoorten zoals nieuwsartikelen, recensies en opiniestukken.
+- **Woordenschat en grammatica:** Beschikken over een brede woordenschat en grammaticale kennis.
+`
+        },
+        components: {
+            title: 'Examenonderdelen Duits VWO',
+            content: `
+Het Centraal Examen Duits VWO is, net als Engels en Frans, volledig gericht op leesvaardigheid.
+
+### Teksten met vragen
+- **Weging:** 100% van de totale score.
+- **Inhoud:** Een examenboekje met diverse Duitstalige teksten.
+- **Vraagtypen:** Grotendeels meerkeuzevragen, gericht op tekstbegrip, woordenschat en het herkennen van grammaticale verbanden.
+
+*Let op: Kennis van signaalwoorden en grammaticale structuren helpt enorm bij het ontleden van complexe Duitse zinnen.*
+`
+        }
     }
 };

@@ -41,9 +41,9 @@ const ChatModal: React.FC<ChatModalProps> = ({ isOpen, onClose, chatHistory, onS
                     {chatHistory.map((msg, index) => (
                         <div key={index} className={`chat-message ${msg.role}`}>
                             {msg.text}
+                             {isSending && msg.role === 'model' && index === chatHistory.length - 1 && <span className="typing-cursor"></span>}
                         </div>
                     ))}
-                     {isSending && <div className="chat-message model">...</div>}
                 </div>
                 <form onSubmit={handleSend} className="chat-form">
                     <input

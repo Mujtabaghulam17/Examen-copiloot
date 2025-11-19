@@ -2,10 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Modality } from "@google/genai";
 import { ai } from '../api/gemini.ts';
 import { decode, decodeAudioData } from '../utils/audio.ts';
-import type { Question } from '../data/data.ts';
+import type { Question, User } from '../data/data.ts';
 
 const SpeakerIcon = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+);
+
+const MicIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
 );
 
 const StopIcon = () => (
@@ -21,7 +25,7 @@ const LoadingIcon = () => (
 );
 
 
-const QuestionCard: React.FC<{ question: Question; allQuestions: Question[]; onSubmit: (answer: string) => void; onGetHint: () => Promise<string>; }> = ({ question, allQuestions, onSubmit, onGetHint }) => {
+const QuestionCard: React.FC<{ question: Question; allQuestions: Question[]; onSubmit: (answer: string) => void; onGetHint: () => Promise<string>; onOralPractice: () => void; user: User | null; }> = ({ question, allQuestions, onSubmit, onGetHint, onOralPractice, user }) => {
   const [answer, setAnswer] = useState('');
   const [hint, setHint] = useState('');
   const [isHintLoading, setIsHintLoading] = useState(false);
@@ -131,6 +135,7 @@ const QuestionCard: React.FC<{ question: Question; allQuestions: Question[]; onS
       setIsHintLoading(false);
   }
 
+
   let passageToShow = question.vraag_passage;
   if (!passageToShow && question.context_id) {
     const contextQuestion = allQuestions.find(q => q.id === question.context_id);
@@ -217,11 +222,19 @@ const QuestionCard: React.FC<{ question: Question; allQuestions: Question[]; onS
              <button type="submit" className="button" disabled={!answer.trim()}>
                 Antwoord insturen
             </button>
-            {!hint && (
-                 <button type="button" className="button-tertiary" onClick={handleGetHint} disabled={isHintLoading}>
-                    {isHintLoading ? 'Hint wordt opgehaald...' : 'Krijg een hint'}
-                </button>
-            )}
+            <div className="button-grid" style={{marginTop: '0'}}>
+                {!hint && (
+                     <button type="button" className="button-tertiary" onClick={handleGetHint} disabled={isHintLoading} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'}}>
+                        {isHintLoading && <div className="spinner" style={{width: '16px', height: '16px', borderWidth: '2px', borderTopColor: 'var(--primary-color)'}}></div>}
+                        {isHintLoading ? 'Hint wordt opgehaald...' : 'Krijg een hint'}
+                    </button>
+                )}
+                {!question.options && (
+                     <button type="button" className="button-tertiary" onClick={onOralPractice} style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'}}>
+                        <MicIcon /> Beantwoord Mondeling
+                    </button>
+                )}
+            </div>
         </div>
       </form>
        {hint && <div className="hint-box">{hint}</div>}
